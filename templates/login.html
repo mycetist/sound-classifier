@@ -1,9 +1,42 @@
 {% extends "base.html" %}
+{% block title %}Вход — Классификатор звуков{% endblock %}
+
 {% block content %}
-<h1>Login</h1>
-<form method="POST">
-<input name="username" placeholder="Username"><br>
-<input name="password" type="password" placeholder="Password"><br>
-<button type="submit">Login</button>
-</form>
+<div class="min-h-[calc(100vh-3.5rem)] flex items-center justify-center -mt-8 -mx-6 px-6 bg-muted/30">
+  <div class="w-full max-w-sm">
+
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-foreground text-background mb-4">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.347a3.75 3.75 0 00-1.044 3.356 1 1 0 01-.86 1.294H9.26a1 1 0 01-.86-1.294 3.75 3.75 0 00-1.044-3.356l-.347-.347z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-semibold tracking-tight">Классификатор звуков</h1>
+      <p class="text-sm text-muted-foreground mt-1">Войдите в свою учетную запись</p>
+    </div>
+
+    <div class="bg-card border border-border rounded-xl shadow-sm p-6">
+      <form method="POST" class="space-y-4">
+        <div class="space-y-2">
+          <label for="username" class="text-sm font-medium leading-none">Имя пользователя</label>
+          <input id="username" name="username" type="text" required autocomplete="username"
+            placeholder="Введите имя пользователя"
+            class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-shadow" />
+        </div>
+        <div class="space-y-2">
+          <label for="password" class="text-sm font-medium leading-none">Пароль</label>
+          <input id="password" name="password" type="password" required autocomplete="current-password"
+            placeholder="Введите пароль"
+            class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-shadow" />
+        </div>
+        <button type="submit"
+          class="inline-flex items-center justify-center w-full rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          Войти
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
 {% endblock %}

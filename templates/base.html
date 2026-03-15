@@ -1,18 +1,109 @@
 <!DOCTYPE html>
-<html>
-<head><title>Sound Classifier</title></head>
-<body>
-<nav>
-{% if current_user.is_authenticated %}
-<a href="{{ url_for('routes.profile') }}">Profile</a>
-<a href="{{ url_for('routes.analytics') }}">Analytics</a>
-{% if current_user.role == 'admin' %}<a href="{{ url_for('routes.admin') }}">Admin</a>{% endif %}
-<a href="{{ url_for('routes.logout') }}">Logout</a>
-{% endif %}
-</nav>
-{% with messages = get_flashed_messages() %}
-{% for message in messages %}<p>{{ message }}</p>{% endfor %}
-{% endwith %}
-{% block content %}{% endblock %}
+<html lang="ru" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Классификатор звуков{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            border: 'hsl(240 5.9% 90%)',
+            input: 'hsl(240 5.9% 90%)',
+            ring: 'hsl(240 5% 64.9%)',
+            background: 'hsl(0 0% 100%)',
+            foreground: 'hsl(240 10% 3.9%)',
+            primary: { DEFAULT: 'hsl(240 5.9% 10%)', foreground: 'hsl(0 0% 98%)' },
+            secondary: { DEFAULT: 'hsl(240 4.8% 95.9%)', foreground: 'hsl(240 5.9% 10%)' },
+            muted: { DEFAULT: 'hsl(240 4.8% 95.9%)', foreground: 'hsl(240 3.8% 46.1%)' },
+            accent: { DEFAULT: 'hsl(240 4.8% 95.9%)', foreground: 'hsl(240 5.9% 10%)' },
+            destructive: { DEFAULT: 'hsl(0 84.2% 60.2%)', foreground: 'hsl(0 0% 98%)' },
+            card: { DEFAULT: 'hsl(0 0% 100%)', foreground: 'hsl(240 10% 3.9%)' },
+          },
+          borderRadius: { lg: '0.5rem', md: 'calc(0.5rem - 2px)', sm: 'calc(0.5rem - 4px)' },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .chart-container { position: relative; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="bg-background text-foreground min-h-full antialiased">
+
+  {% if current_user.is_authenticated %}
+  <header class="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur">
+    <div class="max-w-screen-xl mx-auto flex h-14 items-center px-6">
+      <a href="{{ url_for('routes.profile') }}" class="flex items-center gap-2 font-semibold text-sm mr-8">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.347a3.75 3.75 0 00-1.044 3.356 1 1 0 01-.86 1.294H9.26a1 1 0 01-.86-1.294 3.75 3.75 0 00-1.044-3.356l-.347-.347z"/>
+        </svg>
+        Классификатор звуков
+      </a>
+      <nav class="flex items-center gap-1 flex-1">
+        <a href="{{ url_for('routes.profile') }}"
+           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors {% if request.endpoint == 'routes.profile' %}bg-secondary text-foreground{% else %}text-muted-foreground hover:text-foreground hover:bg-secondary{% endif %}">
+          Профиль
+        </a>
+        <a href="{{ url_for('routes.analytics') }}"
+           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors {% if request.endpoint == 'routes.analytics' %}bg-secondary text-foreground{% else %}text-muted-foreground hover:text-foreground hover:bg-secondary{% endif %}">
+          Аналитика
+        </a>
+        {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('routes.admin') }}"
+           class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors {% if request.endpoint == 'routes.admin' %}bg-secondary text-foreground{% else %}text-muted-foreground hover:text-foreground hover:bg-secondary{% endif %}">
+          Админ панель
+        </a>
+        {% endif %}
+      </nav>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-muted-foreground">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+        <a href="{{ url_for('routes.logout') }}"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Выйти
+        </a>
+      </div>
+    </div>
+  </header>
+  {% endif %}
+
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+  <div class="max-w-screen-xl mx-auto px-6 pt-4 space-y-2">
+    {% for message in messages %}
+    <div class="flex items-center gap-3 px-4 py-3 rounded-lg border text-sm
+                {% if 'error' in message.lower() or 'invalid' in message.lower() or 'denied' in message.lower() %}
+                  bg-destructive/10 border-destructive/20 text-destructive
+                {% else %}
+                  bg-green-50 border-green-200 text-green-800
+                {% endif %}">
+      <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+      </svg>
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <main class="max-w-screen-xl mx-auto px-6 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
 </body>
 </html>

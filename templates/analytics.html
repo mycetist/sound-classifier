@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block title %}Аналитика — Классификатор звуков{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+  <div>
+    <h1 class="text-2xl font-semibold tracking-tight">Аналитика</h1>
+    <p class="text-sm text-muted-foreground mt-1">Диагностика обучения и информация о наборе данных</p>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+    <div class="bg-card border border-border rounded-xl p-6">
+      <div class="mb-4">
+        <h2 class="font-semibold text-sm">Точность на валидации по эпохам</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">Прогресс обучения за 50 эпох</p>
+      </div>
+      <div class="chart-container" style="height:260px">
+        <canvas id="chart-accuracy"></canvas>
+      </div>
+      <p class="text-xs text-muted-foreground mt-2">Прокрутка для масштабирования · Перетаскивание для перемещения</p>
+    </div>
+
+    <div class="bg-card border border-border rounded-xl p-6">
+      <div class="mb-4">
+        <h2 class="font-semibold text-sm">Распределение классов в обучающей выборке</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">Количество примеров для каждой цивилизации</p>
+      </div>
+      <div class="chart-container" style="height:260px">
+        <canvas id="chart-distribution"></canvas>
+      </div>
+      <p class="text-xs text-muted-foreground mt-2">Прокрутка для масштабирования · Перетаскивание для перемещения</p>
+    </div>
+
+    <div class="bg-card border border-border rounded-xl p-6">
+      <div class="mb-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="font-semibold text-sm">Уверенность предсказаний — тестовая выборка</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Уверенность модели для каждой записи в загруженных тестовых данных</p>
+          </div>
+          <span id="test-accuracy-badge" class="hidden text-xs font-semibold px-2 py-1 rounded-full bg-secondary text-foreground"></span>
+        </div>
+      </div>
+      <div id="chart-test-wrapper" class="chart-container" style="height:260px">
+        <canvas id="chart-test"></canvas>
+      </div>
+      <div id="no-test-data" class="hidden flex flex-col items-center justify-center h-52 text-muted-foreground">
+        <svg class="w-10 h-10 mb-2 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        <p class="text-sm">Тестовые данные еще не загружены</p>
+        <a href="{{ url_for('routes.profile') }}" class="text-xs underline underline-offset-2 mt-1">Перейти в профиль для загрузки</a>
+      </div>
+      <p class="text-xs text-muted-foreground mt-2">Прокрутка для масштабирования · Перетаскивание для перемещения</p>
+    </div>
+
+    <div class="bg-card border border-border rounded-xl p-6">
+      <div class="mb-4">
+        <h2 class="font-semibold text-sm">Топ-5 наиболее частых классов — валидационная выборка</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">Количество записей по цивилизациям в валидационных данных</p>
+      </div>
+      <div class="chart-container" style="height:260px">
+        <canvas id="chart-top5"></canvas>
+      </div>
+      <p class="text-xs text-muted-foreground mt-2">Прокрутка для масштабирования · Перетаскивание для перемещения</p>
+    </div>
+
+  </div>
+
+  <div class="bg-card border border-border rounded-xl">
+    <div class="px-6 py-4 border-b border-border flex items-center justify-between">
+      <div>
+        <h2 class="font-semibold text-sm">Журнал обучения</h2>
+        <p class="text-xs text-muted-foreground mt-0.5">Снимок метрик по эпохам</p>
+      </div>
+      <span class="text-xs text-muted-foreground">{{ training_log | length }} эпох</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border">
+            <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Эпоха</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Потери на обучении</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Точность на обучении</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Потери на валидации</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Точность на валидации</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {% for entry in training_log %}
+          <tr class="hover:bg-muted/40 transition-colors">
+            <td class="px-6 py-2.5 font-mono text-xs text-muted-foreground">{{ entry.epoch }}</td>
+            <td class="px-6 py-2.5 text-right font-mono text-xs">{{ "%.5f"|format(entry.train_loss) }}</td>
+            <td class="px-6 py-2.5 text-right font-mono text-xs">{{ "%.2f"|format(entry.train_accuracy * 100) }}%</td>
+            <td class="px-6 py-2.5 text-right font-mono text-xs">{{ "%.5f"|format(entry.val_loss) }}</td>
+            <td class="px-6 py-2.5 text-right font-mono text-xs font-semibold">{{ "%.2f"|format(entry.val_accuracy * 100) }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const CHART_DEFAULTS = {
+  font: { family: "'Inter', system-ui, sans-serif", size: 11 },
+  color: 'hsl(240, 3.8%, 46.1%)',
+};
+Chart.defaults.font = CHART_DEFAULTS.font;
+Chart.defaults.color = CHART_DEFAULTS.color;
+
+const ZOOM_OPTS = {
+  zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' },
+  pan: { enabled: true, mode: 'xy' }
+};
+
+const PALETTE = [
+  '#18181b','#3f3f46','#52525b','#71717a','#a1a1aa',
+  '#d4d4d8','#e4e4e7','#f4f4f5','#fafafa','#09090b',
+  '#1c1917','#292524','#44403c','#57534e','#78716c',
+  '#a8a29e','#d6d3d1','#e7e5e4','#f5f5f4','#0c0a09',
+];
+
+const trainingLog = {{ training_log | tojson }};
+(function() {
+  const epochs = trainingLog.map(e => e.epoch);
+  const valAcc = trainingLog.map(e => +(e.val_accuracy * 100).toFixed(2));
+  const trainAcc = trainingLog.map(e => +(e.train_accuracy * 100).toFixed(2));
+
+  new Chart(document.getElementById('chart-accuracy'), {
+    type: 'line',
+    data: {
+      labels: epochs,
+      datasets: [
+        {
+          label: 'Точность на валидации (%)',
+          data: valAcc,
+          borderColor: '#18181b',
+          backgroundColor: 'rgba(24,24,27,0.06)',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          label: 'Точность на обучении (%)',
+          data: trainAcc,
+          borderColor: '#a1a1aa',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+          tension: 0.3,
+          borderDash: [4, 3],
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 12 } },
+        zoom: ZOOM_OPTS
+      },
+      scales: {
+        x: { title: { display: true, text: 'Эпоха', font: { size: 10 } }, grid: { color: 'hsl(240,5.9%,94%)' } },
+        y: { title: { display: true, text: 'Точность (%)', font: { size: 10 } }, grid: { color: 'hsl(240,5.9%,94%)' }, min: 0 }
+      }
+    }
+  });
+})();
+
+fetch('/api/class-distribution')
+  .then(r => r.json())
+  .then(data => {
+    const labels = Object.keys(data).map(l => l.replace(/_/g,' '));
+    const values = Object.values(data);
+    new Chart(document.getElementById('chart-distribution'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Примеры',
+          data: values,
+          backgroundColor: '#18181b',
+          borderRadius: 3,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          zoom: ZOOM_OPTS
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { maxRotation: 45, minRotation: 30, font: { size: 9 } }
+          },
+          y: {
+            grid: { color: 'hsl(240,5.9%,94%)' },
+            title: { display: true, text: 'Количество', font: { size: 10 } }
+          }
+        }
+      }
+    });
+  });
+
+fetch('/api/last-prediction')
+  .then(r => {
+    if (!r.ok) throw new Error('no data');
+    return r.json();
+  })
+  .then(data => {
+    const results = data.results;
+    const confidences = results.map(r => +(r.confidence * 100).toFixed(1));
+    const classNames = results.map(r => r.class_name.replace(/_/g, ' '));
+
+    if (data.accuracy !== null && data.accuracy !== undefined) {
+      const badge = document.getElementById('test-accuracy-badge');
+      badge.textContent = 'Точность: ' + (data.accuracy * 100).toFixed(1) + '%';
+      badge.classList.remove('hidden');
+    }
+
+    new Chart(document.getElementById('chart-test'), {
+      type: 'bar',
+      data: {
+        labels: results.map((_, i) => '#' + (i + 1)),
+        datasets: [{
+          label: 'Уверенность (%)',
+          data: confidences,
+          backgroundColor: confidences.map(c =>
+            c >= 70 ? 'rgba(24,24,27,0.8)'
+            : c >= 40 ? 'rgba(24,24,27,0.45)'
+            : 'rgba(24,24,27,0.2)'
+          ),
+          borderRadius: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: ctx => 'Запись ' + ctx[0].label,
+              afterBody: ctx => 'Класс: ' + classNames[ctx[0].dataIndex]
+            }
+          },
+          zoom: ZOOM_OPTS
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 9 }, maxTicksLimit: 20 }
+          },
+          y: {
+            grid: { color: 'hsl(240,5.9%,94%)' },
+            title: { display: true, text: 'Уверенность (%)', font: { size: 10 } },
+            min: 0, max: 100
+          }
+        }
+      }
+    });
+  })
+  .catch(() => {
+    document.getElementById('chart-test-wrapper').classList.add('hidden');
+    document.getElementById('no-test-data').classList.remove('hidden');
+    document.getElementById('no-test-data').classList.add('flex');
+  });
+
+fetch('/api/validation-top5')
+  .then(r => r.json())
+  .then(data => {
+    const labels = Object.keys(data).map(l => l.replace(/_/g, ' '));
+    const values = Object.values(data);
+    new Chart(document.getElementById('chart-top5'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Записи',
+          data: values,
+          backgroundColor: ['#18181b','#3f3f46','#52525b','#71717a','#a1a1aa'],
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          zoom: ZOOM_OPTS
+        },
+        scales: {
+          x: {
+            grid: { color: 'hsl(240,5.9%,94%)' },
+            title: { display: true, text: 'Количество', font: { size: 10 } }
+          },
+          y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}
