@@ -35,3 +35,7 @@ notebooks/     # обучение модели
 ```
 
 ## Тесты
+
+```bash
+python3.11 -m pytest tests/test_app.py -v
+```
