@@ -25,6 +25,8 @@ python run.py
 | admin    | admin123 | admin |
 | user     | user123  | user |
 
+## 
+
 ## Структура
 
 ```
@@ -33,6 +35,17 @@ templates/     # Jinja2 + Tailwind фронтэнд
 model/         # данные о модели
 notebooks/     # обучение модели
 ```
+
+## Технологии
+
+| Назначение | Инструмент |
+|---|---|
+| ML | PyTorch + torchaudio |
+| Бэкэнд | Flask + Flask-Login + Flask-SQLAlchemy |
+| База данных | SQLite |
+| Фронтэнд | Jinja2 + Tailwind CSS (CDN) |
+| Графики | Chart.js + chartjs-plugin-zoom |
+| Тесты | pytest + Flask test client |
 
 ## Тесты
 
