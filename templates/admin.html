@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Admin Panel</h1>
+
+<h2>Create User</h2>
+<form method="POST" action="{{ url_for('routes.create_user') }}">
+<input name="username" placeholder="Username"><br>
+<input name="password" type="password" placeholder="Password"><br>
+<input name="first_name" placeholder="First Name"><br>
+<input name="last_name" placeholder="Last Name"><br>
+<select name="role">
+<option value="user">User</option>
+<option value="admin">Admin</option>
+</select><br>
+<button type="submit">Create</button>
+</form>
+
+<h2>Users</h2>
+<ul>
+{% for u in users %}
+<li>{{ u.username }} - {{ u.first_name }} {{ u.last_name }} ({{ u.role }})
+{% if u.username != 'admin' %}
+<form method="POST" action="{{ url_for('routes.delete_user', user_id=u.id) }}" style="display:inline">
+<button type="submit">Delete</button>
+</form>
+{% endif %}
+</li>
+{% endfor %}
+</ul>
+{% endblock %}

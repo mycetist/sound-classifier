@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Sound Classifier</title></head>
+<body>
+<nav>
+{% if current_user.is_authenticated %}
+<a href="{{ url_for('routes.profile') }}">Profile</a>
+<a href="{{ url_for('routes.analytics') }}">Analytics</a>
+{% if current_user.role == 'admin' %}<a href="{{ url_for('routes.admin') }}">Admin</a>{% endif %}
+<a href="{{ url_for('routes.logout') }}">Logout</a>
+{% endif %}
+</nav>
+{% with messages = get_flashed_messages() %}
+{% for message in messages %}<p>{{ message }}</p>{% endfor %}
+{% endwith %}
+{% block content %}{% endblock %}
+</body>
+</html>
