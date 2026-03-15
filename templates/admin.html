@@ -1,30 +1,112 @@
 {% extends "base.html" %}
+{% block title %}Админ панель{% endblock %}
+
 {% block content %}
-<h1>Admin Panel</h1>
+<div class="space-y-8">
 
-<h2>Create User</h2>
-<form method="POST" action="{{ url_for('routes.create_user') }}">
-<input name="username" placeholder="Username"><br>
-<input name="password" type="password" placeholder="Password"><br>
-<input name="first_name" placeholder="First Name"><br>
-<input name="last_name" placeholder="Last Name"><br>
-<select name="role">
-<option value="user">User</option>
-<option value="admin">Admin</option>
-</select><br>
-<button type="submit">Create</button>
-</form>
+  <div>
+    <h1 class="text-2xl font-semibold tracking-tight">Админ панель</h1>
+    <p class="text-sm text-muted-foreground mt-1">Управление учетными записями пользователей</p>
+  </div>
 
-<h2>Users</h2>
-<ul>
-{% for u in users %}
-<li>{{ u.username }} - {{ u.first_name }} {{ u.last_name }} ({{ u.role }})
-{% if u.username != 'admin' %}
-<form method="POST" action="{{ url_for('routes.delete_user', user_id=u.id) }}" style="display:inline">
-<button type="submit">Delete</button>
-</form>
-{% endif %}
-</li>
-{% endfor %}
-</ul>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <div class="lg:col-span-1">
+      <div class="bg-card border border-border rounded-xl p-6">
+        <h2 class="font-semibold text-base mb-1">Создать нового пользователя</h2>
+        <p class="text-xs text-muted-foreground mb-4">Заполните все поля для создания новой учетной записи.</p>
+        <form method="POST" action="{{ url_for('routes.create_user') }}" class="space-y-3">
+          <div class="grid grid-cols-2 gap-2">
+            <div class="space-y-1">
+              <label class="text-xs font-medium">Имя</label>
+              <input name="first_name" type="text" required placeholder="Иван"
+                class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-shadow" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-medium">Фамилия</label>
+              <input name="last_name" type="text" required placeholder="Петров"
+                class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-shadow" />
+            </div>
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-medium">Имя пользователя</label>
+            <input name="username" type="text" required placeholder="ivanpetrov"
+              class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-shadow" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-medium">Пароль</label>
+            <input name="password" type="password" required placeholder="••••••••"
+              class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-shadow" />
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-medium">Роль</label>
+            <select name="role"
+              class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-shadow">
+              <option value="user">Пользователь</option>
+              <option value="admin">Администратор</option>
+            </select>
+          </div>
+          <button type="submit"
+            class="inline-flex items-center justify-center gap-2 w-full rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors mt-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Создать пользователя
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="lg:col-span-2">
+      <div class="bg-card border border-border rounded-xl">
+        <div class="px-6 py-4 border-b border-border flex items-center justify-between">
+          <div>
+            <h2 class="font-semibold text-base">Все пользователи</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">{{ users | length }} {{ 'учетная запись' if users | length == 1 else 'учетные записи' if users | length < 5 else 'учетных записей' }}</p>
+          </div>
+        </div>
+        <div class="divide-y divide-border">
+          {% for u in users %}
+          <div class="px-6 py-4 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold shrink-0 {% if u.role == 'admin' %}bg-foreground text-background{% else %}bg-secondary text-foreground{% endif %}">
+                {{ u.first_name[0] }}{{ u.last_name[0] }}
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-medium">{{ u.first_name }} {{ u.last_name }}</p>
+                <p class="text-xs text-muted-foreground">@{{ u.username }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                {% if u.role == 'admin' %}bg-foreground text-background{% else %}bg-secondary text-foreground{% endif %}">
+                {{ 'Администратор' if u.role == 'admin' else 'Пользователь' }}
+              </span>
+              {% if u.username != 'admin' %}
+              <form method="POST" action="{{ url_for('routes.delete_user', user_id=u.id) }}"
+                    onsubmit="return confirm('Удалить {{ u.first_name }} {{ u.last_name }}?')">
+                <button type="submit"
+                  class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-destructive/30 text-destructive text-xs font-medium hover:bg-destructive hover:text-destructive-foreground transition-colors">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                  Удалить
+                </button>
+              </form>
+              {% else %}
+              <span class="text-xs text-muted-foreground italic px-2.5">Защищено</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% if not users %}
+        <div class="px-6 py-12 text-center text-sm text-muted-foreground">Пользователи не найдены.</div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+</div>
 {% endblock %}
