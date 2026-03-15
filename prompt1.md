@@ -1,1 +1,0 @@
-make a webpage where you upload a sound file and it uses a neural network model to classify it into classes. use ui.shadcn.com as inspiration, or, better yet, we can use the actual thing. graphs should be made with matplotlib or another similar library, preferably make them look good and fancy. 
