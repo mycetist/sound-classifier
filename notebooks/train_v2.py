@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import matplotlib.pyplot as plt
+import h5py
 
 NPZ_PATH = '../Data.npz'
 DATA_DIR = '../Data'
@@ -71,10 +72,8 @@ def audio_to_melspec(audio_arr):
         arr = arr / peak
     n = len(arr)
     n_frames = min(max(1, (n - N_FFT) // HOP + 1), FIXED_FRAMES)
-    # Pad so we can safely slice
     padded = np.zeros(n_frames * HOP + N_FFT, dtype=np.float32)
     padded[:n] = arr
-    # Vectorized frame extraction via stride trick
     shape = (n_frames, N_FFT)
     strides = (padded.strides[0] * HOP, padded.strides[0])
     frames = np.lib.stride_tricks.as_strided(padded, shape=shape, strides=strides) * WINDOW
@@ -119,7 +118,7 @@ class AudioCNN(nn.Module):
 model = AudioCNN(num_classes)
 
 print("Обучение модели...")
-EPOCHS = 80
+EPOCHS = 50
 BATCH_SIZE = 32
 LR = 1e-3
 
@@ -175,6 +174,29 @@ if best_state:
     model.load_state_dict(best_state)
 
 torch.save(model.state_dict(), '../model/model.pt')
+
+# Save model in .h5 format (HDF5) for submission requirements
+def save_model_h5(model, filepath, label_map, spec_norm):
+    """Save PyTorch model weights to HDF5 format."""
+    state_dict = model.state_dict()
+    with h5py.File(filepath, 'w') as f:
+        # Save model weights
+        weights_grp = f.create_group('model_weights')
+        for name, param in state_dict.items():
+            weights_grp.create_dataset(name, data=param.numpy())
+        
+        # Save metadata
+        meta_grp = f.create_group('metadata')
+        meta_grp.create_dataset('num_classes', data=num_classes)
+        meta_grp.attrs['label_map'] = json.dumps(label_map)
+        meta_grp.attrs['spec_norm'] = json.dumps(spec_norm)
+        meta_grp.attrs['architecture'] = 'AudioCNN'
+
+save_model_h5(model, '../model/model.h5', label_map, 
+              {'mean': spec_mean, 'std': spec_std, 'sr': SR,
+               'n_mels': N_MELS, 'n_fft': N_FFT, 'hop': HOP,
+               'fixed_frames': FIXED_FRAMES})
+
 with open('../model/training_log.json', 'w') as f:
     json.dump(log, f, indent=2)
 with open('../model/label_map.json', 'w') as f:
@@ -184,7 +206,7 @@ dist = Counter(y_train.tolist())
 with open('../model/class_distribution.json', 'w') as f:
     json.dump({label_map_inv[i]: dist[i] for i in range(num_classes)}, f, indent=2)
 
-print("Сохранено: model.pt, training_log.json, label_map.json, spec_norm.json, class_distribution.json")
+print("Сохранено: model.pt, model.h5, training_log.json, label_map.json, spec_norm.json, class_distribution.json")
 
 eps = [e['epoch'] for e in log]
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))

@@ -1,0 +1,10 @@
+flask
+flask-login
+flask-sqlalchemy
+werkzeug
+torch
+numpy
+scikit-learn
+librosa
+gunicorn
+h5py

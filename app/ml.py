@@ -3,8 +3,9 @@ import torch.nn as nn
 import numpy as np
 import json
 import os
+import h5py
 
-MODEL_DIR = 'model'
+MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'model')
 
 class AudioCNN(nn.Module):
     def __init__(self, num_classes=20):
@@ -88,6 +89,16 @@ def _audio_to_melspec(audio_arr, norm):
     return ((mel - mean) / std).astype(np.float32)        # (n_mels, fixed)
 
 # ── Load model ────────────────────────────────────────────────────────────────
+def _load_weights_h5(filepath, model):
+    """Load model weights from HDF5 (.h5) file."""
+    state_dict = {}
+    with h5py.File(filepath, 'r') as f:
+        weights_grp = f['model_weights']
+        for name in weights_grp.keys():
+            state_dict[name] = torch.tensor(weights_grp[name][:])
+    model.load_state_dict(state_dict)
+    return model
+
 def load_model():
     global _model, _spec_norm, _label_map, _label_map_inv
     if _label_map is None:
@@ -103,9 +114,15 @@ def load_model():
             _spec_norm = {}
     if _model is None:
         _model = AudioCNN(num_classes=len(_label_map))
-        _model.load_state_dict(torch.load(
-            os.path.join(MODEL_DIR, 'model.pt'),
-            map_location='cpu', weights_only=True))
+        # Try .pt first, then .h5
+        pt_path = os.path.join(MODEL_DIR, 'model.pt')
+        h5_path = os.path.join(MODEL_DIR, 'model.h5')
+        if os.path.exists(pt_path):
+            _model.load_state_dict(torch.load(pt_path, map_location='cpu', weights_only=True))
+        elif os.path.exists(h5_path):
+            _model = _load_weights_h5(h5_path, _model)
+        else:
+            raise FileNotFoundError(f"No model found at {pt_path} or {h5_path}")
         _model.eval()
     return _model, _spec_norm, _label_map, _label_map_inv
 

@@ -4,10 +4,13 @@
 
 ## Запуск
 
+1. Положите файл `Data.npz` в корень проекта
+2. Запустите следующие команды:
+
 ```bash
 pip install -r requirements.txt
-python train_v2.py   # обучение модели
-python seed_data.py   # создает тестовые аккаунты
+python train_v2.py # обучение модели
+python seed_data.py # создает тестовые аккаунты
 python run.py
 ```
 
